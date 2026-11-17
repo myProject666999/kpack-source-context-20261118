@@ -138,32 +138,32 @@ jobs:
           cat "images/$name"
         done
     - name: Upload controller image
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: controller-image
         path: images/controller
     - name: Upload webhook image
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: webhook-image
         path: images/webhook
     - name: Upload completion image
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: completion-image
         path: images/completion
     - name: Upload build-init image
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-init-image
         path: images/build-init
     - name: Upload build-waiter image
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-waiter-image
         path: images/build-waiter
     - name: Upload rebase image
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: rebase-image
         path: images/rebase
@@ -191,7 +191,7 @@ jobs:
           cat images/lifecycle
 
     - name: Upload Image Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: lifecycle-image
         path: images/
@@ -238,7 +238,7 @@ jobs:
         cat prerelease.yaml
 
     - name: Upload Pre-Release
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: prerelease
         path: prerelease.yaml
@@ -475,7 +475,7 @@ jobs:
         done
 
     - name: Upload image refs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: final-image-refs
         path: final-image-refs/*
@@ -496,7 +496,7 @@ jobs:
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
 
     - name: Upload Release
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: release
         path: release-${{ env.KPACK_VERSION }}.yaml
