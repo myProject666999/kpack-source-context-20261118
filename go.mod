@@ -1,6 +1,6 @@
 module github.com/pivotal/kpack
 
-go 1.24.5
+go 1.26.0
 
 replace github.com/docker/docker v28.2.2+incompatible => github.com/docker/docker v28.5.2+incompatible
 
@@ -38,7 +38,7 @@ require (
 	golang.org/x/crypto v0.47.0
 	golang.org/x/net v0.49.0
 	golang.org/x/oauth2 v0.34.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.25.0
 	k8s.io/api v0.34.3
 	k8s.io/apimachinery v0.34.3
 	k8s.io/client-go v0.34.3
