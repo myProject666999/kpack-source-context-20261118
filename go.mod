@@ -34,7 +34,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/theupdateframework/notary v0.7.0
 	github.com/vdemeester/k8s-pkg-credentialprovider v1.22.4
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	golang.org/x/crypto v0.47.0
 	golang.org/x/net v0.49.0
 	golang.org/x/oauth2 v0.34.0
