@@ -29,6 +29,10 @@ func newK8sGitKeychain(k8sClient k8sclient.Interface, sshTrustUnknownHosts bool)
 }
 
 func (k *k8sGitKeychain) Resolve(ctx context.Context, namespace, serviceAccount string, git corev1alpha1.Git) (transport.AuthMethod, error) {
+	return k.resolveURL(ctx, namespace, serviceAccount, git.URL)
+}
+
+func (k *k8sGitKeychain) resolveURL(ctx context.Context, namespace, serviceAccount, url string) (transport.AuthMethod, error) {
 	secrets, err := k.secretFetcher.SecretsForServiceAccount(ctx, serviceAccount, namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
@@ -59,7 +63,7 @@ func (k *k8sGitKeychain) Resolve(ctx context.Context, namespace, serviceAccount 
 		}
 	}
 
-	return (&secretGitKeychain{creds: creds}).Resolve(git.URL)
+	return (&secretGitKeychain{creds: creds}).Resolve(url)
 }
 
 func fetchBasicAuth(s *v1.Secret) func() (secret.BasicAuth, error) {

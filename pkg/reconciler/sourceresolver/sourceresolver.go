@@ -38,12 +38,14 @@ func NewController(
 	gitResolver Resolver,
 	blobResolver Resolver,
 	registryResolver Resolver,
+	contextResolver SourceContextResolver,
 	featureflags config.FeatureFlags,
 ) *controller.Impl {
 	c := &Reconciler{
 		GitResolver:          gitResolver,
 		BlobResolver:         blobResolver,
 		RegistryResolver:     registryResolver,
+		ContextResolver:      contextResolver,
 		Client:               opt.Client,
 		SourceResolverLister: sourceResolverInformer.Lister(),
 		FeatureFlags:         featureflags,
@@ -77,6 +79,7 @@ type Reconciler struct {
 	GitResolver          Resolver
 	BlobResolver         Resolver
 	RegistryResolver     Resolver
+	ContextResolver      SourceContextResolver
 	Enqueuer             Enqueuer
 	Client               versioned.Interface
 	SourceResolverLister buildlisters.SourceResolverLister
@@ -106,6 +109,13 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	resolvedSource, err := sourceReconciler.Resolve(ctx, sourceResolver)
 	if err != nil {
 		return err
+	}
+
+	if c.ContextResolver != nil {
+		resolvedSource, err = c.ContextResolver.ResolveContext(ctx, sourceResolver.Namespace, sourceResolver.Spec.ServiceAccountName, sourceResolver.Spec.Source, resolvedSource, sourceResolver.Status.Source)
+		if err != nil {
+			return err
+		}
 	}
 
 	sourceResolver.ResolvedSource(resolvedSource)

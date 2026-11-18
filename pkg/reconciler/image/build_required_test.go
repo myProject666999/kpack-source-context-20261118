@@ -515,6 +515,29 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
+			it("false for a new GitRevision when the trimmed context digest is unchanged", func() {
+				// Simulate a monorepo commit outside the Image's subPath: the
+				// revision advanced, but the selected content did not change.
+				sourceResolver.Status.Source.Git.Revision = "different"
+				sourceResolver.Status.Source.Git.ContextDigest = "sha256:context-a"
+				latestBuild.Spec.Source.ContextDigest = "sha256:context-a"
+
+				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+				assert.NoError(t, err)
+				assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
+			})
+
+			it("true for a new GitRevision when the trimmed context digest changed", func() {
+				sourceResolver.Status.Source.Git.Revision = "different"
+				sourceResolver.Status.Source.Git.ContextDigest = "sha256:context-b"
+				latestBuild.Spec.Source.ContextDigest = "sha256:context-a"
+
+				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+				assert.NoError(t, err)
+				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
+				assert.Equal(t, buildapi.BuildReasonCommit, result.ReasonsStr)
+			})
+
 			it("false if source resolver is not ready", func() {
 				sourceResolver.Status.Source.Git.Revision = "different"
 				sourceResolver.Status.Conditions = []corev1alpha1.Condition{
@@ -735,6 +758,35 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
+			})
+
+			it("false for a new Blob digest when the trimmed context digest is unchanged", func() {
+				sourceResolver.Status.Source = corev1alpha1.ResolvedSourceConfig{
+					Blob: &corev1alpha1.ResolvedBlobSource{URL: "some-url", Digest: "sha256:new", ContextDigest: "sha256:context-a"},
+				}
+				latestBuild.Spec.Source = corev1alpha1.SourceConfig{
+					Blob:          &corev1alpha1.Blob{URL: "some-url", Digest: "sha256:old"},
+					ContextDigest: "sha256:context-a",
+				}
+
+				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+				assert.NoError(t, err)
+				assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
+			})
+
+			it("true for a new Blob digest when the trimmed context digest changed", func() {
+				sourceResolver.Status.Source = corev1alpha1.ResolvedSourceConfig{
+					Blob: &corev1alpha1.ResolvedBlobSource{URL: "some-url", Digest: "sha256:new", ContextDigest: "sha256:context-b"},
+				}
+				latestBuild.Spec.Source = corev1alpha1.SourceConfig{
+					Blob:          &corev1alpha1.Blob{URL: "some-url", Digest: "sha256:old"},
+					ContextDigest: "sha256:context-a",
+				}
+
+				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+				assert.NoError(t, err)
+				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
+				assert.Equal(t, buildapi.BuildReasonCommit, result.ReasonsStr)
 			})
 		})
 

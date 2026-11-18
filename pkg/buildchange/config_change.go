@@ -31,10 +31,11 @@ type Config struct {
 func (c configChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonConfig }
 
 func (c configChange) IsBuildRequired() (bool, error) {
-	// Git revision changes are considered as COMMIT change
-	// Ignore them as part of CONFIG Change
-	var oldGitRevision, newGitRevision string
-
+	// Revision/digest changes are considered COMMIT changes. Ignore them here
+	// as part of the CONFIG change, otherwise every new commit would also be
+	// reported as a configuration change.
+	oldGitRevision := ""
+	newGitRevision := ""
 	if c.old.Source.Git != nil {
 		oldGitRevision = c.old.Source.Git.Revision
 		c.old.Source.Git.Revision = ""
@@ -44,6 +45,35 @@ func (c configChange) IsBuildRequired() (bool, error) {
 		c.new.Source.Git.Revision = ""
 	}
 
+	oldBlobDigest := ""
+	newBlobDigest := ""
+	if c.old.Source.Blob != nil {
+		oldBlobDigest = c.old.Source.Blob.Digest
+		c.old.Source.Blob.Digest = ""
+	}
+	if c.new.Source.Blob != nil {
+		newBlobDigest = c.new.Source.Blob.Digest
+		c.new.Source.Blob.Digest = ""
+	}
+
+	oldRegistryDigest := ""
+	newRegistryDigest := ""
+	if c.old.Source.Registry != nil {
+		oldRegistryDigest = c.old.Source.Registry.Digest
+		c.old.Source.Registry.Digest = ""
+	}
+	if c.new.Source.Registry != nil {
+		newRegistryDigest = c.new.Source.Registry.Digest
+		c.new.Source.Registry.Digest = ""
+	}
+
+	// The context digest is likewise a content change, decided by the
+	// COMMIT-style comparison, not by CONFIG.
+	oldContextDigest := c.old.Source.ContextDigest
+	newContextDigest := c.new.Source.ContextDigest
+	c.old.Source.ContextDigest = ""
+	c.new.Source.ContextDigest = ""
+
 	valid := !equality.Semantic.DeepEqual(c.old, c.new)
 
 	if c.old.Source.Git != nil {
@@ -52,6 +82,21 @@ func (c configChange) IsBuildRequired() (bool, error) {
 	if c.new.Source.Git != nil {
 		c.new.Source.Git.Revision = newGitRevision
 	}
+	if c.old.Source.Blob != nil {
+		c.old.Source.Blob.Digest = oldBlobDigest
+	}
+	if c.new.Source.Blob != nil {
+		c.new.Source.Blob.Digest = newBlobDigest
+	}
+	if c.old.Source.Registry != nil {
+		c.old.Source.Registry.Digest = oldRegistryDigest
+	}
+	if c.new.Source.Registry != nil {
+		c.new.Source.Registry.Digest = newRegistryDigest
+	}
+	c.old.Source.ContextDigest = oldContextDigest
+	c.new.Source.ContextDigest = newContextDigest
+
 	return valid, nil
 }
 

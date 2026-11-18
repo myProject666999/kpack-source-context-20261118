@@ -41,6 +41,7 @@ func (r *remoteGitResolver) ResolveByListingRemote(auth transport.AuthMethod, so
 				Revision:             sourceConfig.Git.Revision,
 				Type:                 corev1alpha1.Unknown,
 				SubPath:              sourceConfig.SubPath,
+				Excludes:             sourceConfig.Excludes,
 				InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
 			},
 		}, nil
@@ -54,6 +55,7 @@ func (r *remoteGitResolver) ResolveByListingRemote(auth transport.AuthMethod, so
 					Revision:             ref.Hash().String(),
 					Type:                 sourceType(ref),
 					SubPath:              sourceConfig.SubPath,
+					Excludes:             sourceConfig.Excludes,
 					InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
 				},
 			}, nil

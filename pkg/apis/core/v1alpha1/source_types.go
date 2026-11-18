@@ -13,6 +13,17 @@ type SourceConfig struct {
 	Blob     *Blob     `json:"blob,omitempty"`
 	Registry *Registry `json:"registry,omitempty"`
 	SubPath  string    `json:"subPath,omitempty"`
+	// +listType
+	// Excludes are gitignore-style patterns applied to the trimmed build
+	// context. They are matched relative to SubPath (or the source root when
+	// SubPath is unset). Leaving this empty preserves the historical,
+	// untrimmed build input.
+	Excludes []string `json:"excludes,omitempty"`
+	// ContextDigest is the content digest of the trimmed build context
+	// (SubPath plus Excludes). It is only set when trimming is requested. When
+	// empty, build inputs are byte-for-byte identical to the pre-trimming
+	// behavior.
+	ContextDigest string `json:"contextDigest,omitempty"`
 }
 
 func (sc *SourceConfig) Source() Source {
@@ -79,6 +90,10 @@ type Blob struct {
 	URL             string `json:"url"`
 	Auth            string `json:"auth,omitempty"`
 	StripComponents int64  `json:"stripComponents,omitempty"`
+	// Digest pins the blob to the sha256 of its bytes. It is only populated
+	// when source-context trimming is in use; legacy sources leave it empty so
+	// their build input is unchanged.
+	Digest string `json:"digest,omitempty"`
 }
 
 func (b *Blob) ImagePullSecretsVolume(name string) corev1.Volume {
@@ -111,6 +126,10 @@ func (b *Blob) BuildEnvVars() []corev1.EnvVar {
 // +k8s:deepcopy-gen=true
 type Registry struct {
 	Image string `json:"image"`
+	// Digest pins the source image to its content digest. It is only populated
+	// when source-context trimming is in use; legacy sources leave it empty so
+	// their build input is unchanged.
+	Digest string `json:"digest,omitempty"`
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	// +listType
@@ -189,6 +208,9 @@ type ResolvedGitSource struct {
 	Tree                 string        `json:"tree,omitempty"`
 	Type                 GitSourceKind `json:"type"`
 	InitializeSubmodules bool          `json:"initializeSubmodules,omitempty"`
+	// +listType
+	Excludes      []string `json:"excludes,omitempty"`
+	ContextDigest string   `json:"contextDigest,omitempty"`
 }
 
 func (gs *ResolvedGitSource) SourceConfig() SourceConfig {
@@ -198,7 +220,9 @@ func (gs *ResolvedGitSource) SourceConfig() SourceConfig {
 			Revision:             gs.Revision,
 			InitializeSubmodules: gs.InitializeSubmodules,
 		},
-		SubPath: gs.SubPath,
+		SubPath:       gs.SubPath,
+		Excludes:      gs.Excludes,
+		ContextDigest: gs.ContextDigest,
 	}
 }
 
@@ -217,6 +241,10 @@ type ResolvedBlobSource struct {
 	Auth            string `json:"auth,omitempty"`
 	SubPath         string `json:"subPath,omitempty"`
 	StripComponents int64  `json:"stripComponents,omitempty"`
+	Digest          string `json:"digest,omitempty"`
+	// +listType
+	Excludes      []string `json:"excludes,omitempty"`
+	ContextDigest string   `json:"contextDigest,omitempty"`
 }
 
 func (bs *ResolvedBlobSource) SourceConfig() SourceConfig {
@@ -225,8 +253,11 @@ func (bs *ResolvedBlobSource) SourceConfig() SourceConfig {
 			URL:             bs.URL,
 			Auth:            bs.Auth,
 			StripComponents: bs.StripComponents,
+			Digest:          bs.Digest,
 		},
-		SubPath: bs.SubPath,
+		SubPath:       bs.SubPath,
+		Excludes:      bs.Excludes,
+		ContextDigest: bs.ContextDigest,
 	}
 }
 
@@ -243,6 +274,10 @@ func (bs *ResolvedBlobSource) IsPollable() bool {
 type ResolvedRegistrySource struct {
 	Image   string `json:"image"`
 	SubPath string `json:"subPath,omitempty"`
+	Digest  string `json:"digest,omitempty"`
+	// +listType
+	Excludes      []string `json:"excludes,omitempty"`
+	ContextDigest string   `json:"contextDigest,omitempty"`
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	// +listType
@@ -253,9 +288,12 @@ func (rs *ResolvedRegistrySource) SourceConfig() SourceConfig {
 	return SourceConfig{
 		Registry: &Registry{
 			Image:            rs.Image,
+			Digest:           rs.Digest,
 			ImagePullSecrets: rs.ImagePullSecrets,
 		},
-		SubPath: rs.SubPath,
+		SubPath:       rs.SubPath,
+		Excludes:      rs.Excludes,
+		ContextDigest: rs.ContextDigest,
 	}
 }
 

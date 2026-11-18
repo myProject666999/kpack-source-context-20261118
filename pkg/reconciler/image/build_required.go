@@ -70,14 +70,44 @@ func triggerChange(lastBuild *buildapi.Build) buildchange.Change {
 }
 
 func commitChange(lastBuild *buildapi.Build, srcResolver *buildapi.SourceResolver) buildchange.Change {
-	// If the lastBuild was not a Git source, then it is not a COMMIT change
-	if lastBuild == nil || lastBuild.Spec.Source.Git == nil || srcResolver.Status.Source.Git == nil {
+	if lastBuild == nil {
 		return nil
 	}
 
-	oldRevision := lastBuild.Spec.Source.Git.Revision
-	newRevision := srcResolver.Status.Source.Git.Revision
-	return buildchange.NewCommitChange(oldRevision, newRevision)
+	oldSource := lastBuild.Spec.Source
+	newSource := srcResolver.Status.Source.ResolvedSource().SourceConfig()
+
+	switch {
+	case oldSource.Git != nil && newSource.Git != nil:
+		// When the source has a trimmed context, a revision bump that leaves
+		// the subdirectory content unchanged is not a meaningful commit
+		// change. The context digest is computed over the selected files, so
+		// unrelated monorepo changes no longer force a rebuild.
+		if oldSource.ContextDigest != "" && newSource.ContextDigest != "" {
+			return buildchange.NewContextChange(oldSource.Git.Revision, newSource.Git.Revision, oldSource.ContextDigest, newSource.ContextDigest)
+		}
+		return buildchange.NewCommitChange(oldSource.Git.Revision, newSource.Git.Revision)
+	case oldSource.Blob != nil && newSource.Blob != nil:
+		return digestChange(oldSource.ContextDigest, newSource.ContextDigest, oldSource.Blob.Digest, newSource.Blob.Digest)
+	case oldSource.Registry != nil && newSource.Registry != nil:
+		return digestChange(oldSource.ContextDigest, newSource.ContextDigest, oldSource.Registry.Digest, newSource.Registry.Digest)
+	default:
+		return nil
+	}
+}
+
+func digestChange(oldContextDigest, newContextDigest, oldDigest, newDigest string) buildchange.Change {
+	if oldDigest == "" || newDigest == "" {
+		// Legacy (unpinned) blob/registry sources, or the first time a source
+		// becomes pinned after an upgrade, must not schedule a rebuild. Content
+		// changes for unpinned sources still surface as CONFIG changes on the
+		// URL/image, exactly as before.
+		return nil
+	}
+	if oldContextDigest != "" && newContextDigest != "" {
+		return buildchange.NewContextChange(oldDigest, newDigest, oldContextDigest, newContextDigest)
+	}
+	return buildchange.NewCommitChange(oldDigest, newDigest)
 }
 
 func configChange(img *buildapi.Image, lastBuild *buildapi.Build, srcResolver *buildapi.SourceResolver) buildchange.Change {

@@ -5080,6 +5080,13 @@ func schema_pkg_apis_core_v1alpha1_Blob(ref common.ReferenceCallback) common.Ope
 							Format: "int64",
 						},
 					},
+					"digest": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Digest pins the blob to the sha256 of its bytes. It is only populated when source-context trimming is in use; legacy sources leave it empty so their build input is unchanged.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"url"},
 			},
@@ -5675,6 +5682,13 @@ func schema_pkg_apis_core_v1alpha1_Registry(ref common.ReferenceCallback) common
 							Format:  "",
 						},
 					},
+					"digest": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Digest pins the source image to its content digest. It is only populated when source-context trimming is in use; legacy sources leave it empty so their build input is unchanged.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"imagePullSecrets": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -5735,6 +5749,37 @@ func schema_pkg_apis_core_v1alpha1_ResolvedBlobSource(ref common.ReferenceCallba
 							Format: "int64",
 						},
 					},
+					"digest": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"excludes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"contextDigest": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"url"},
 			},
@@ -5787,6 +5832,31 @@ func schema_pkg_apis_core_v1alpha1_ResolvedGitSource(ref common.ReferenceCallbac
 							Format: "",
 						},
 					},
+					"excludes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"contextDigest": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"url", "revision", "type"},
 			},
@@ -5808,6 +5878,37 @@ func schema_pkg_apis_core_v1alpha1_ResolvedRegistrySource(ref common.ReferenceCa
 						},
 					},
 					"subPath": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"digest": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"excludes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"contextDigest": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -5896,6 +5997,33 @@ func schema_pkg_apis_core_v1alpha1_SourceConfig(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"excludes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Excludes are gitignore-style patterns applied to the trimmed build context. They are matched relative to SubPath (or the source root when SubPath is unset). Leaving this empty preserves the historical, untrimmed build input.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"contextDigest": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ContextDigest is the content digest of the trimmed build context (SubPath plus Excludes). It is only set when trimming is requested. When empty, build inputs are byte-for-byte identical to the pre-trimming behavior.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

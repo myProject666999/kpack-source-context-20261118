@@ -27,6 +27,7 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 			Revision:             sourceConfig.Git.Revision,
 			Type:                 corev1alpha1.Unknown,
 			SubPath:              sourceConfig.SubPath,
+			Excludes:             sourceConfig.Excludes,
 			InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
 		},
 	}
@@ -76,6 +77,7 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 			Tree:                 hashOfSubpath(sourceConfig.SubPath, output.hash, repository),
 			Type:                 output.kind,
 			SubPath:              sourceConfig.SubPath,
+			Excludes:             sourceConfig.Excludes,
 			InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
 		},
 	}, nil

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -21,6 +22,10 @@ var errUnexpectedBlobType = fmt.Errorf("unexpected blob file type, must be one o
 type Fetcher struct {
 	Logger   *log.Logger
 	Keychain Keychain
+	// Digest, when set, pins the build to a specific sha256 of the archived
+	// bytes. A mismatch aborts the fetch so a moving URL cannot change the
+	// content of a pinned build. An empty Digest preserves legacy behavior.
+	Digest string
 }
 
 func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadataDir string) error {
@@ -59,6 +64,10 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 	checksum, err := sha256sum(file)
 	if err != nil {
 		return err
+	}
+
+	if f.Digest != "" && normalizeDigest(f.Digest) != checksum {
+		return fmt.Errorf("blob %q content digest %q does not match pinned digest %q", blobURL, checksum, f.Digest)
 	}
 
 	switch mediaType {
@@ -166,6 +175,11 @@ func classifyFile(reader io.ReadSeeker) (string, error) {
 	}
 
 	return http.DetectContentType(buf), nil
+}
+
+// normalizeDigest accepts an optionally algorithm-prefixed sha256 hex digest.
+func normalizeDigest(digest string) string {
+	return strings.TrimPrefix(digest, "sha256:")
 }
 
 func sha256sum(reader io.ReadSeeker) (string, error) {

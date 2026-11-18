@@ -450,6 +450,25 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 
+		it("does not add SOURCE_EXCLUDES when no excludes are configured", func() {
+			pod, err := build.BuildPod(config, buildContext)
+			require.NoError(t, err)
+
+			_, ok := containerEnv(t, pod.Spec.InitContainers, "prepare", "SOURCE_EXCLUDES")
+			assert.False(t, ok)
+		})
+
+		it("passes SOURCE_EXCLUDES to the prepare step when configured", func() {
+			build.Spec.Source.Excludes = []string{"vendor/", "*.log"}
+
+			pod, err := build.BuildPod(config, buildContext)
+			require.NoError(t, err)
+
+			value, ok := containerEnv(t, pod.Spec.InitContainers, "prepare", "SOURCE_EXCLUDES")
+			require.True(t, ok)
+			assert.Equal(t, "vendor/\n*.log", value)
+		})
+
 		it("configures the services", func() {
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
@@ -2509,6 +2528,19 @@ func volumeMountFromContainer(t *testing.T, containers []corev1.Container, conta
 	}
 	t.Errorf("could not find volume mount with name %s in container %s", volumeName, containerName)
 	return corev1.VolumeMount{}
+}
+
+func containerEnv(t *testing.T, containers []corev1.Container, containerName, envName string) (string, bool) {
+	t.Helper()
+	for _, container := range containers {
+		if container.Name != containerName {
+			continue
+		}
+		if envVar, ok := fetchEnvVar(container.Env, envName); ok {
+			return envVar.Value, true
+		}
+	}
+	return "", false
 }
 
 func names(mounts []corev1.VolumeMount) (names []string) {

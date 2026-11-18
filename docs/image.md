@@ -85,12 +85,15 @@ The `source` field is a composition of a source code location and a `subpath`. I
         revision: ""
         initializeSubmodules: false
       subPath: ""
+      excludes:
+      - ""
     ```
     - `git`: (Source Code is a git repository)
         - `url`: The git repository url. Both https and ssh formats are supported; with ssh format requiring a [ssh secret](secrets.md#git-secrets).
         - `revision`: The git revision to use. This value may be a commit sha, branch name, or tag.
         - `initializeSubmodules`: Initialize submodules inside repo, recurses up to a max depth of 10 submodules.
-    - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level. If the `GIT_RESOLVER_USE_SHALLOW_CLONE` feature flag is enabled, and `git.revision` is a branch, new builds will only be scheduled if the new commits modify the files within `subPath` in any way.
+    - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level. When `subPath` is set, kpack resolves the source to an immutable revision and only schedules new builds when the content within `subPath` changes. See [source context](source_context.md).
+    - `excludes`: A list of gitignore-style patterns, matched relative to `subPath` (or the source root when `subPath` is unset), removed from the build context. When `subPath` and `excludes` are both unset, build inputs are identical to previous releases. See [source context](source_context.md).
 
 * Blob
 
@@ -101,6 +104,8 @@ The `source` field is a composition of a source code location and a `subpath`. I
         stripComponents: 0
         auth: "" | "secret" | "helper"
       subPath: ""
+      excludes:
+      - ""
     ```
     - `blob`: (Source Code is a blob/jar in a blobstore)
         - `url`: The URL of the source code blob. This blob needs to either be publicly accessible or have the access token in the URL
@@ -109,7 +114,8 @@ The `source` field is a composition of a source code location and a `subpath`. I
              > Note: Only [Microsoft Azure](https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview)
              > and [Google Cloud Platform](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#kubernetes-sa-to-iam)
              > helpers are currently implemented, contributions are welcome to `pkg/blob/<iaas>_keychain.go`.
-    - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
+    - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level. When set, the blob is pinned to the sha256 of its bytes. See [source context](source_context.md).
+    - `excludes`: A list of gitignore-style patterns removed from the build context. See [source context](source_context.md).
 
 * Registry
 
@@ -120,11 +126,14 @@ The `source` field is a composition of a source code location and a `subpath`. I
         imagePullSecrets:
         - name: ""
       subPath: ""
+      excludes:
+      - ""
     ```
     - `registry` ( Source code is an OCI image in a registry that contains application source)
         - `image`: Location of the source image
         - `imagePullSecrets`: A list of `dockercfg` or `dockerconfigjson` secret names required if the source image is private
-    - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
+    - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level. When set, the source image is pinned to its manifest digest. See [source context](source_context.md).
+    - `excludes`: A list of gitignore-style patterns removed from the build context. See [source context](source_context.md).
 
 ### <a id='build-config'></a>Build Configuration
 

@@ -7162,6 +7162,10 @@
         "auth": {
           "type": "string"
         },
+        "digest": {
+          "description": "Digest pins the blob to the sha256 of its bytes. It is only populated when source-context trimming is in use; legacy sources leave it empty so their build input is unchanged.",
+          "type": "string"
+        },
         "stripComponents": {
           "type": "integer",
           "format": "int64"
@@ -7481,6 +7485,10 @@
         "image"
       ],
       "properties": {
+        "digest": {
+          "description": "Digest pins the source image to its content digest. It is only populated when source-context trimming is in use; legacy sources leave it empty so their build input is unchanged.",
+          "type": "string"
+        },
         "image": {
           "type": "string",
           "default": ""
@@ -7506,6 +7514,20 @@
         "auth": {
           "type": "string"
         },
+        "contextDigest": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        },
+        "excludes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "default": ""
+          },
+          "x-kubernetes-list-type": ""
+        },
         "stripComponents": {
           "type": "integer",
           "format": "int64"
@@ -7527,6 +7549,17 @@
         "type"
       ],
       "properties": {
+        "contextDigest": {
+          "type": "string"
+        },
+        "excludes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "default": ""
+          },
+          "x-kubernetes-list-type": ""
+        },
         "initializeSubmodules": {
           "type": "boolean"
         },
@@ -7556,6 +7589,20 @@
         "image"
       ],
       "properties": {
+        "contextDigest": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        },
+        "excludes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "default": ""
+          },
+          "x-kubernetes-list-type": ""
+        },
         "image": {
           "type": "string",
           "default": ""
@@ -7594,6 +7641,19 @@
       "properties": {
         "blob": {
           "$ref": "#/definitions/kpack.core.v1alpha1.Blob"
+        },
+        "contextDigest": {
+          "description": "ContextDigest is the content digest of the trimmed build context (SubPath plus Excludes). It is only set when trimming is requested. When empty, build inputs are byte-for-byte identical to the pre-trimming behavior.",
+          "type": "string"
+        },
+        "excludes": {
+          "description": "Excludes are gitignore-style patterns applied to the trimmed build context. They are matched relative to SubPath (or the source root when SubPath is unset). Leaving this empty preserves the historical, untrimmed build input.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "default": ""
+          },
+          "x-kubernetes-list-type": ""
         },
         "git": {
           "$ref": "#/definitions/kpack.core.v1alpha1.Git"

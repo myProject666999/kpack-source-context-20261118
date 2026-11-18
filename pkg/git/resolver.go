@@ -3,6 +3,7 @@ package git
 import (
 	"context"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
@@ -36,4 +37,26 @@ func (r *Resolver) Resolve(ctx context.Context, sourceResolver *buildapi.SourceR
 
 func (*Resolver) CanResolve(sourceResolver *buildapi.SourceResolver) bool {
 	return sourceResolver.IsGit()
+}
+
+// NewSnapshotFetcher returns a source.Fetcher that resolves git credentials
+// for a specific namespace and service account. The auth resolver is bound
+// per call because credentials are namespaced.
+func (r *Resolver) NewSnapshotFetcher(ctx context.Context, namespace, serviceAccount string) *SnapshotFetcher {
+	return &SnapshotFetcher{
+		AuthFor: func(url string) (transport.AuthMethod, error) {
+			return r.gitKeychain.resolveURL(ctx, namespace, serviceAccount, url)
+		},
+	}
+}
+
+// NewNamespacedSnapshotFetcher builds a git snapshot fetcher directly from a
+// Kubernetes client, resolving credentials for one namespace/service account.
+func NewNamespacedSnapshotFetcher(ctx context.Context, k8sClient k8sclient.Interface, sshTrustUnknownHosts bool, namespace, serviceAccount string) *SnapshotFetcher {
+	keychain := newK8sGitKeychain(k8sClient, sshTrustUnknownHosts)
+	return &SnapshotFetcher{
+		AuthFor: func(url string) (transport.AuthMethod, error) {
+			return keychain.resolveURL(ctx, namespace, serviceAccount, url)
+		},
+	}
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/git"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/source"
 )
 
 var (
@@ -34,8 +35,11 @@ var (
 	blobURL                 = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
 	blobAuth                = flag.Bool("blob-auth", getenvBool("BLOB_AUTH"), "If authentication should be used for blobs")
 	stripComponents         = flag.Int("strip-components", getenvInt("BLOB_STRIP_COMPONENTS", 0), "The number of directory components to strip from the blobs content when extracting.")
+	blobDigest              = flag.String("blob-digest", os.Getenv("BLOB_DIGEST"), "The pinned sha256 digest of the source blob, when the source is pinned")
 	registryImage           = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
+	registryDigest          = flag.String("registry-digest", os.Getenv("REGISTRY_DIGEST"), "The pinned digest of the source code image, when the source is pinned")
 	sourceSubPath           = flag.String("source-sub-path", os.Getenv("SOURCE_SUB_PATH"), "the subpath inside the source directory that will be the buildpack workspace")
+	sourceExcludes          = flag.String("source-excludes", os.Getenv("SOURCE_EXCLUDES"), "newline separated gitignore-style patterns removed from the build context")
 	buildChanges            = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 	descriptorPath          = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
 
@@ -150,7 +154,17 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	err = cnb.ProcessProjectDescriptor(filepath.Join(appDir, *sourceSubPath), *descriptorPath, platformDir, logger)
+	// Apply exclude rules within the context root. SUB_PATH is the context
+	// root; with no excludes this is a no-op and the build input is identical
+	// to previous releases.
+	contextRoot := filepath.Join(appDir, *sourceSubPath)
+	if excludes := parseExcludes(*sourceExcludes); len(excludes) > 0 {
+		if err := source.TrimDirectory(contextRoot, excludes); err != nil {
+			logger.Fatalf("error while trimming the build context: %s", err)
+		}
+	}
+
+	err = cnb.ProcessProjectDescriptor(contextRoot, *descriptorPath, platformDir, logger)
 	if err != nil {
 		logger.Fatalf("error while processing the project descriptor: %s", err)
 	}
@@ -214,6 +228,7 @@ func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 		fetcher := blob.Fetcher{
 			Logger:   logger,
 			Keychain: blobKeychain,
+			Digest:   *blobDigest,
 		}
 		return fetcher.Fetch(appDir, *blobURL, *stripComponents, projectMetadataDir)
 	case *registryImage != "":
@@ -226,6 +241,7 @@ func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 			Logger:   logger,
 			Client:   &registry.Client{},
 			Keychain: authn.NewMultiKeychain(registrySourcePullSecrets, keychain),
+			Digest:   *registryDigest,
 		}
 		return fetcher.Fetch(appDir, *registryImage, projectMetadataDir)
 	default:
@@ -253,6 +269,18 @@ func getenvInt(key string, defaultValue int) int {
 		return defaultValue
 	}
 	return atoi
+}
+
+// parseExcludes splits the newline-encoded exclude list. Blank lines are
+// ignored so an empty environment variable yields no trimming.
+func parseExcludes(value string) []string {
+	var excludes []string
+	for _, line := range strings.Split(value, "\n") {
+		if trimmed := strings.TrimSpace(line); trimmed != "" {
+			excludes = append(excludes, trimmed)
+		}
+	}
+	return excludes
 }
 
 func getenvBool(key string) bool {

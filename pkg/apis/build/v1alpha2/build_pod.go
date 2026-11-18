@@ -385,12 +385,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						Args:            append(secretArgs, imagePullArgs...),
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(),
-						Env: append(
-							buildEnv,
+						Env: prepareEnv(buildEnv,
 							corev1.EnvVar{
 								Name:  "SOURCE_SUB_PATH",
 								Value: b.Spec.Source.SubPath,
 							},
+							sourceExcludesEnv(b.Spec.Source.Excludes),
 							corev1.EnvVar{
 								Name:  "PROJECT_DESCRIPTOR_PATH",
 								Value: b.Spec.ProjectDescriptorPath,
@@ -610,6 +610,31 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 
 func boolPointer(b bool) *bool {
 	return &b
+}
+
+// sourceExcludesEnv encodes exclude patterns for build-init. It returns an
+// empty env var when no trimming is configured; prepareEnv drops only that
+// empty entry so legacy pod specs are unchanged.
+func sourceExcludesEnv(excludes []string) corev1.EnvVar {
+	if len(excludes) == 0 {
+		return corev1.EnvVar{}
+	}
+	return corev1.EnvVar{Name: "SOURCE_EXCLUDES", Value: strings.Join(excludes, "\n")}
+}
+
+// prepareEnv appends the given env vars to the base list, dropping only
+// entries with no name (the marker used for an omitted optional variable).
+// Unlike envs, it does not drop variables that are present but empty, so
+// existing pod specs are preserved exactly.
+func prepareEnv(base []corev1.EnvVar, added ...corev1.EnvVar) []corev1.EnvVar {
+	out := append([]corev1.EnvVar{}, base...)
+	for _, envVar := range added {
+		if envVar.Name == "" {
+			continue
+		}
+		out = append(out, envVar)
+	}
+	return out
 }
 
 func containerSecurityContext() *corev1.SecurityContext {

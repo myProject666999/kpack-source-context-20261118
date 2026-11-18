@@ -16,6 +16,7 @@ func (*Resolver) Resolve(ctx context.Context, sourceResolver *buildapi.SourceRes
 			Image:            sourceResolver.Spec.Source.Registry.Image,
 			ImagePullSecrets: sourceResolver.Spec.Source.Registry.ImagePullSecrets,
 			SubPath:          sourceResolver.Spec.Source.SubPath,
+			Excludes:         sourceResolver.Spec.Source.Excludes,
 		},
 	}, nil
 }

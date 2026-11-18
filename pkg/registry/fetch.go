@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -35,6 +36,10 @@ type Fetcher struct {
 	Logger   *log.Logger
 	Client   ImageClient
 	Keychain authn.Keychain
+	// Digest, when set, pins the build to a specific image digest. A tag that
+	// moved since resolution aborts the fetch. An empty Digest preserves
+	// legacy behavior.
+	Digest string
 }
 
 func (f *Fetcher) Fetch(dir, registryImage string, metadataDir string) error {
@@ -47,6 +52,10 @@ func (f *Fetcher) Fetch(dir, registryImage string, metadataDir string) error {
 
 	parts := strings.SplitN(identifer, "@", 2)
 	ref, digest := parts[0], parts[1]
+
+	if f.Digest != "" && f.Digest != digest {
+		return fmt.Errorf("source image %q resolved to digest %q, not the pinned digest %q", registryImage, digest, f.Digest)
+	}
 
 	cType, err := getContentType(img)
 	if err != nil {

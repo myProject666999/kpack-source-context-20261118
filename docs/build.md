@@ -91,6 +91,8 @@ The `source` field is a composition of a source code location and a `subpath`. I
         url: ""
         revision: ""
       subPath: ""
+      excludes:
+      - ""
     ```
     - `git`: (Source Code is a git repository)
         - `url`: The git repository url. Both https and ssh formats are supported; with ssh format requiring a [ssh secret](secrets.md#git-secrets).
@@ -100,6 +102,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
              > and [Google Cloud Platform](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#kubernetes-sa-to-iam)
              > helpers are currently implemented, contributions are welcome to `pkg/blob/<iaas>_keychain.go`.
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
+    - `excludes`: A list of gitignore-style patterns removed from the build context. See [source context](source_context.md).
 
 * Blob
 
@@ -109,11 +112,14 @@ The `source` field is a composition of a source code location and a `subpath`. I
         url: ""
         stripComponents: 0
       subPath: ""
+      excludes:
+      - ""
     ```
     - `blob`: (Source Code is a blob/jar in a blobstore)
         - `url`: The URL of the source code blob. This blob needs to either be publicly accessible or have the access token in the URL
         - `stripComponents`: Optional number of directory components to strip from the blobs content when extracting.
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
+    - `excludes`: A list of gitignore-style patterns removed from the build context. See [source context](source_context.md).
 
 * Registry
 
@@ -124,11 +130,14 @@ The `source` field is a composition of a source code location and a `subpath`. I
         imagePullSecrets:
         - name: ""
       subPath: ""
+      excludes:
+      - ""
     ```
     - `registry` ( Source code is an OCI image in a registry that contains application source)
         - `image`: Location of the source image
         - `imagePullSecrets`: A list of `dockercfg` or `dockerconfigjson` secret names required if the source image is private
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
+    - `excludes`: A list of gitignore-style patterns removed from the build context. See [source context](source_context.md).
 
 
 

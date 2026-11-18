@@ -1,5 +1,11 @@
 # Support for filtering by `subPath`
 
+> `subPath` and `excludes` are now part of the standard [source
+> context](source_context.md) feature and no longer require the
+> `GIT_RESOLVER_USE_SHALLOW_CLONE` experiment. The experiment described below
+> remains available and, when enabled, is used instead of the source-context
+> digest.
+
 By default, kpack will check out the whole repository and build the project from
 the root. If you set `spec.subPath` to the name of a directory value, kpack will
 build that directory only.  When an Image is set to track a branch, and

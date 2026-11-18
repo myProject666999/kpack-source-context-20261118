@@ -13,9 +13,10 @@ type Resolver struct {
 func (*Resolver) Resolve(ctx context.Context, sourceResolver *buildapi.SourceResolver) (corev1alpha1.ResolvedSourceConfig, error) {
 	return corev1alpha1.ResolvedSourceConfig{
 		Blob: &corev1alpha1.ResolvedBlobSource{
-			URL:     sourceResolver.Spec.Source.Blob.URL,
-			Auth:    sourceResolver.Spec.Source.Blob.Auth,
-			SubPath: sourceResolver.Spec.Source.SubPath,
+			URL:      sourceResolver.Spec.Source.Blob.URL,
+			Auth:     sourceResolver.Spec.Source.Blob.Auth,
+			SubPath:  sourceResolver.Spec.Source.SubPath,
+			Excludes: sourceResolver.Spec.Source.Excludes,
 		},
 	}, nil
 }

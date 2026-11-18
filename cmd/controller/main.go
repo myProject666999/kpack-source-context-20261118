@@ -57,6 +57,7 @@ import (
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
 	"github.com/pivotal/kpack/pkg/slsa"
+	"github.com/pivotal/kpack/pkg/source"
 )
 
 const (
@@ -177,6 +178,14 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
+	// The source-context resolver pins revisions and computes trimmed context
+	// digests. It is shared across all Images so a revision is fetched once
+	// and reused, regardless of how many subdirectories reference it.
+	contextResolver := sourceresolver.NewContextResolver(
+		source.NewCache(),
+		sourceresolver.NewClusterFetcherFactory(k8sClient, keychainFactory, cfg.SshTrustUnknownHosts),
+	)
+
 	remoteStoreReader := &cnb.RemoteBuildpackReader{
 		RegistryClient: &registry.Client{},
 	}
@@ -217,7 +226,7 @@ func main() {
 
 	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, &slsaAttester, secretFetcher, featureFlags)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, cfg.EnablePriorityClasses)
-	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver, featureFlags)
+	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver, contextResolver, featureFlags)
 	builderController := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
 	clusterBuilderController := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
